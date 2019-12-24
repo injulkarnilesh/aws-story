@@ -26,8 +26,11 @@ import static org.junit.Assert.assertTrue;
 public class StudentDynamoDaoTest {
 
     private static final String CLASS_STUDENTS = "class-students";
-    private final String HTTP_LOCALHOST = "http://localhost";
+    private static final String EMAIL = "email";
     private final String STUDENTS = "students";
+
+    private final String HTTP_LOCALHOST = "http://localhost";
+
     private DynamoDBProxyServer server;
     private String port;
     private AmazonDynamoDB dynamodb;
@@ -55,7 +58,7 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldCreateTableStudents() {
         final StudentDynamoDao dynamoDao = new StudentDynamoDao(dynamodb);
-        dynamoDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        dynamoDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
 
         final ListTablesResult tables = dynamodb.listTables();
 
@@ -67,15 +70,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldInsertSingleRow() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
 
         List<Student> students = studentDao.getAllStudents();
         assertThat(students, hasSize(0));
 
-        final Student s = new Student();
-        s.setEmail("injulkarnilesh@gmail.com");
-        s.setName("Nilesh");
-        s.setSurname("Injulkar");
+        final Student s = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
         studentDao.saveStudent(s);
 
         students = studentDao.getAllStudents();
@@ -90,18 +90,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldInsertMultipleRows() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
 
-        final Student s = new Student();
-        s.setEmail("injulkarnilesh@gmail.com");
-        s.setName("Nilesh");
-        s.setSurname("Injulkar");
+        final Student s = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
         studentDao.saveStudent(s);
 
-        final Student s1 = new Student();
-        s1.setEmail("supriya.patil@cdk.com");
-        s1.setName("Supriya");
-        s1.setSurname("Patil");
+        final Student s1 = aStudent("supriya.patil@cdk.com", "Supriya", "Patil");
         studentDao.saveStudent(s1);
 
         final List<Student> students = studentDao.getAllStudents();
@@ -111,18 +105,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldFindStudentByEmail() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
 
-        final Student s = new Student();
-        s.setEmail("injulkarnilesh@gmail.com");
-        s.setName("Nilesh");
-        s.setSurname("Injulkar");
+        final Student s = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
         studentDao.saveStudent(s);
 
-        final Student s1 = new Student();
-        s1.setEmail("supriya.patil@cdk.com");
-        s1.setName("Supriya");
-        s1.setSurname("Patil");
+        final Student s1 = aStudent("supriya.patil@cdk.com", "Supriya", "Patil");
         studentDao.saveStudent(s1);
 
         final Optional<Student> matchingStudent = studentDao.findByEmail("injulkarnilesh@gmail.com");
@@ -133,12 +121,9 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldNotFindStudentByEmail() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
 
-        final Student s = new Student();
-        s.setEmail("injulkarnilesh@gmail.com");
-        s.setName("Nilesh");
-        s.setSurname("Injulkar");
+        final Student s = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
         studentDao.saveStudent(s);
 
         final Optional<Student> matchingStudent = studentDao.findByEmail("fake@gmail.com");
@@ -150,27 +135,15 @@ public class StudentDynamoDaoTest {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(CLASS_STUDENTS,
                 "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
+                EMAIL, ScalarAttributeType.S);
 
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
-        final Student sp = new Student();
-        sp.setEmail("patil.supriya@cdk.com");
-        sp.setName("Supriya");
-        sp.setSurname("Patil");
+        final Student sp = aStudent("patil.supriya@cdk.com", "Supriya", "Patil");
 
-        final Student rk = new Student();
-        rk.setEmail("kumar.rohit@cdk.com");
-        rk.setName("Rohit");
-        rk.setSurname("Kumar");
+        final Student rk = aStudent("kumar.rohit@cdk.com", "Rohit", "Kumar");
 
-        final Student st = new Student();
-        st.setEmail("tarakar.sapan@cdk.com");
-        st.setName("Sapan");
-        st.setSurname("Tarkar");
+        final Student st = aStudent("tarakar.sapan@cdk.com", "Sapan", "Tarkar");
 
         studentDao.saveStudentsInClass("Economics", in, st);
         studentDao.saveStudentsInClass("Physics", rk, sp, in);
@@ -190,27 +163,15 @@ public class StudentDynamoDaoTest {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(CLASS_STUDENTS,
                 "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
+                EMAIL, ScalarAttributeType.S);
 
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
-        final Student sp = new Student();
-        sp.setEmail("patil.supriya@cdk.com");
-        sp.setName("Supriya");
-        sp.setSurname("Patil");
+        final Student sp = aStudent("patil.supriya@cdk.com", "Supriya", "Patil");
 
-        final Student rk = new Student();
-        rk.setEmail("kumar.rohit@cdk.com");
-        rk.setName("Rohit");
-        rk.setSurname("Kumar");
+        final Student rk = aStudent("kumar.rohit@cdk.com", "Rohit", "Kumar");
 
-        final Student st = new Student();
-        st.setEmail("tarakar.sapan@cdk.com");
-        st.setName("Sapan");
-        st.setSurname("Tarkar");
+        final Student st = aStudent("tarakar.sapan@cdk.com", "Sapan", "Tarkar");
 
         studentDao.saveStudentsInClass("Economics", in, st);
         studentDao.saveStudentsInClass("Physics", rk, sp, in);
@@ -226,47 +187,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void shouldSupportTransactionWithSuccess() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
                 "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
+                EMAIL, ScalarAttributeType.S);
 
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
-
-        final Student sp = new Student();
-        sp.setEmail("patil.supriya@cdk.com");
-        sp.setName("Supriya");
-        sp.setSurname("Patil");
-
-        studentDao.saveStudentsInClassTx("C++", in);
-
-        final List<Student> students = studentDao.getAllStudents();
-        assertThat(students, hasSize(1));
-
-        final List<Student> cppStudents = studentDao.getAllStudentsOfClass("C++");
-        assertThat(cppStudents, hasSize(1));
-    }
-
-    @Test
-    public void shouldSupportTransactionWithPartialFailure() {
-        final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
-        studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
-
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
-
-        final Student sp = new Student();
-        sp.setEmail("patil.supriya@cdk.com");
-        sp.setName("Supriya");
-        sp.setSurname("Patil");
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
         studentDao.saveStudentsInClassTx("C++", in);
 
@@ -280,15 +206,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void failsToSaveNullClassName() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
                 "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
+                EMAIL, ScalarAttributeType.S);
 
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
         studentDao.saveStudent(in);
         try {
@@ -304,15 +227,12 @@ public class StudentDynamoDaoTest {
     @Test
     public void saveInTransaction() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
-        studentDao.createTable(STUDENTS, "email", ScalarAttributeType.S);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
                 "class", ScalarAttributeType.S,
-                "email", ScalarAttributeType.S);
+                EMAIL, ScalarAttributeType.S);
 
-        final Student in = new Student();
-        in.setEmail("injulkarnilesh@gmail.com");
-        in.setName("Nilesh");
-        in.setSurname("Injulkar");
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
         try {
             studentDao.saveStudentsInClassTx(null, in);
@@ -324,9 +244,38 @@ public class StudentDynamoDaoTest {
         assertThat("Transaction should not commit student", allStudents, hasSize(0));
     }
 
+
+    @Test
+    public void shouldUpdateStudent() {
+        final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
+        studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
+
+        final Student s = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
+        studentDao.saveStudent(s);
+
+        s.setName("Dr");
+        s.setSurname("Watson");
+
+        studentDao.updateStudent(s);
+
+        final Optional<Student> updatedStudent = studentDao.findByEmail(s.getEmail());
+        assertTrue(updatedStudent.isPresent());
+        final Student updated = updatedStudent.get();
+        assertThat(updated.getName(), is(s.getName()));
+        assertThat(updated.getSurname(), is(s.getSurname()));
+    }
+
     @After
     public void shutdown() throws Exception {
         server.stop();
+    }
+
+    private Student aStudent(final String email, final String name, final String surname) {
+        final Student s = new Student();
+        s.setEmail(email);
+        s.setName(name);
+        s.setSurname(surname);
+        return s;
     }
 
     private static String getAvailablePort() throws IOException {

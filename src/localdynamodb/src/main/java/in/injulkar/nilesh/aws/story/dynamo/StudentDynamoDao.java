@@ -1,9 +1,9 @@
 package in.injulkar.nilesh.aws.story.dynamo;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemResult;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
@@ -21,10 +21,7 @@ import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.TransactWriteItem;
 import com.amazonaws.services.dynamodbv2.model.TransactWriteItemsRequest;
-import com.amazonaws.services.dynamodbv2.model.TransactWriteItemsResult;
-import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
-import javafx.util.Pair;
-import sun.dc.pr.PRError;
+import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -227,6 +224,15 @@ public class StudentDynamoDao {
                 .withTransactItems(writeToStudents, writeToClassStudents);
 
         amazonDynamoDB.transactWriteItems(txRequest);
+    }
+
+    public void updateStudent(final Student student) {
+        final UpdateItemRequest updateItemRequest = new UpdateItemRequest()
+                .withTableName(STUDENTS)
+                .addKeyEntry("email", new AttributeValue().withS(student.getEmail()))
+                .addAttributeUpdatesEntry("name", new AttributeValueUpdate().withValue(new AttributeValue().withS(student.getName())))
+                .addAttributeUpdatesEntry("surname", new AttributeValueUpdate().withValue(new AttributeValue().withS(student.getSurname())));
+        amazonDynamoDB.updateItem(updateItemRequest);
     }
 
     private Map<String, AttributeValue> toPutItemMap(final Student student) {
