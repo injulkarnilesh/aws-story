@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.local.server.DynamoDBProxyServer;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,6 +28,9 @@ public class StudentDynamoDaoTest {
 
     private static final String CLASS_STUDENTS = "class-students";
     private static final String EMAIL = "email";
+    private static final String CLASS = "classname";
+    private static final String FIRSTNAME = "firstname";
+
     private final String STUDENTS = "students";
 
     private final String HTTP_LOCALHOST = "http://localhost";
@@ -134,15 +138,12 @@ public class StudentDynamoDaoTest {
     public void shouldSaveWithHashAndRangeKeyAndFindWithHashKey() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
+                CLASS, ScalarAttributeType.S,
                 EMAIL, ScalarAttributeType.S);
 
         final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
-
         final Student sp = aStudent("patil.supriya@cdk.com", "Supriya", "Patil");
-
         final Student rk = aStudent("kumar.rohit@cdk.com", "Rohit", "Kumar");
-
         final Student st = aStudent("tarakar.sapan@cdk.com", "Sapan", "Tarkar");
 
         studentDao.saveStudentsInClass("Economics", in, st);
@@ -162,15 +163,12 @@ public class StudentDynamoDaoTest {
     public void shouldSaveWithHashAndRangeKeyAndFindWithHashAndRangeKey() {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
+                CLASS, ScalarAttributeType.S,
                 EMAIL, ScalarAttributeType.S);
 
         final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
-
         final Student sp = aStudent("patil.supriya@cdk.com", "Supriya", "Patil");
-
         final Student rk = aStudent("kumar.rohit@cdk.com", "Rohit", "Kumar");
-
         final Student st = aStudent("tarakar.sapan@cdk.com", "Sapan", "Tarkar");
 
         studentDao.saveStudentsInClass("Economics", in, st);
@@ -189,7 +187,7 @@ public class StudentDynamoDaoTest {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
+                CLASS, ScalarAttributeType.S,
                 EMAIL, ScalarAttributeType.S);
 
         final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
@@ -208,17 +206,13 @@ public class StudentDynamoDaoTest {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
+                CLASS, ScalarAttributeType.S,
                 EMAIL, ScalarAttributeType.S);
 
         final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
         studentDao.saveStudent(in);
-        try {
-            studentDao.saveStudentsInClass(null, in);
-        } catch (Exception e) {
-
-        }
+        assertFails(() -> studentDao.saveStudentsInClass(null, in));
 
         final List<Student> allStudents = studentDao.getAllStudents();
         assertThat("Student is saved", allStudents, hasSize(1));
@@ -229,16 +223,12 @@ public class StudentDynamoDaoTest {
         final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
         studentDao.createTable(STUDENTS, EMAIL, ScalarAttributeType.S);
         studentDao.createTable(CLASS_STUDENTS,
-                "class", ScalarAttributeType.S,
+                CLASS, ScalarAttributeType.S,
                 EMAIL, ScalarAttributeType.S);
 
         final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
 
-        try {
-            studentDao.saveStudentsInClassTx(null, in);
-        } catch (Exception e) {
-
-        }
+        assertFails(() -> studentDao.saveStudentsInClassTx(null, in));
 
         final List<Student> allStudents = studentDao.getAllStudents();
         assertThat("Transaction should not commit student", allStudents, hasSize(0));
@@ -265,9 +255,45 @@ public class StudentDynamoDaoTest {
         assertThat(updated.getSurname(), is(s.getSurname()));
     }
 
+    @Test
+    public void shouldCreateTableWithLocalSecondaryIndex() {
+        final StudentDynamoDao studentDao = new StudentDynamoDao(dynamodb);
+        studentDao.createTable(CLASS_STUDENTS,
+                CLASS, ScalarAttributeType.S,
+                EMAIL, ScalarAttributeType.S);
+
+        final Student in = aStudent("injulkarnilesh@gmail.com", "Nilesh", "Injulkar");
+        final Student ind = aStudent("injulkarnilesh@hotmail.com", "Nilesh", "Injulkar");
+        final Student sup = aStudent("supariya.some@cdk.com", "Supriya", "Patil");
+        studentDao.saveStudentsInClass("Physics", in, ind);
+
+        assertFails(() -> studentDao.getStudentsOfClassWithName("Physics", "Nilesh"));
+
+        studentDao.dropTable(CLASS_STUDENTS);
+
+        studentDao.createTableWithLocalSecondaryIndex(CLASS_STUDENTS,
+                CLASS, ScalarAttributeType.S,
+                EMAIL, ScalarAttributeType.S, FIRSTNAME, ScalarAttributeType.S);
+        studentDao.saveStudentsInClass("Physics", in, ind, sup);
+
+        final List<Student> students = studentDao.getStudentsOfClassWithName("Physics", "Nilesh");
+        assertThat(students, hasSize(2));
+        assertThat(students, hasItem(in));
+        assertThat(students, hasItem(ind));
+    }
+
     @After
     public void shutdown() throws Exception {
         server.stop();
+    }
+
+    private  void assertFails(final Runnable runnable) {
+        try {
+            runnable.run();
+            Assert.fail("Exception expected");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private Student aStudent(final String email, final String name, final String surname) {
